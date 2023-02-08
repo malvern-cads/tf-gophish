@@ -74,7 +74,7 @@
       ansible.builtin.template:
         src: ./resources/Caddyfile.j2
         dest: /etc/caddy/Caddyfile
-        user: caddy
+        owner: caddy
         group: caddy
         mode: '660'
     - name: Restart Caddy

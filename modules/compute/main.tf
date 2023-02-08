@@ -29,6 +29,17 @@ resource "aws_instance" "this" {
   tags = {
     Name = var.prefix
   }
+
+  lifecycle {
+    ignore_changes = [
+      ami
+    ]
+  }
+}
+
+resource "aws_eip" "this" {
+  instance = aws_instance.this.id
+  vpc      = true
 }
 
 resource "local_file" "this" {
