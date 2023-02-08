@@ -1,0 +1,84 @@
+- name: Setup GoPhish
+  vars:
+    gophish_version: "0.12.1"
+    gophish_admin_domain: gophish.cadscheme.uk
+    gophish_web_domain: 2f6c81e77beb4956b47493578ac1384919f68a84ac1c4522bd9b321b87dbb46.jh7ri7c797innfofsfp66icxkkf9096uvv3ey07zff7e1wa1dpwfyritbudt6aq.cadscheme.uk
+  hosts: all
+  become: true
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - unzip
+        state: present
+    - name: Add Caddy apt repository
+      block:
+        - name: Import Caddy repository GPG key
+          apt_key:
+            url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+            state: present
+          become: true
+        - name: Add Caddy repository
+          apt_repository:
+            repo: deb https://dl.cloudsmith.io/public/caddy/stable/deb/ubuntu jammy main
+            state: present
+          become: true
+    - name: Create GoPhish directory
+      ansible.builtin.file:
+        path: /opt/gophish/
+        state: directory
+    - name: Download GoPhish {{ gophish_version }}
+      ansible.builtin.get_url:
+        url: https://github.com/gophish/gophish/releases/download/v{{ gophish_version }}/gophish-v{{ gophish_version }}-linux-64bit.zip
+        dest: /tmp/gophish.zip
+    - name: Extract GoPhish
+      ansible.builtin.unarchive:
+        src: /tmp/gophish.zip
+        dest: /opt/gophish/
+        remote_src: true
+    - name: Delete GoPhish archive
+      ansible.builtin.file:
+        path: /tmp/gophish.zip
+        state: absent
+    - name: Make GoPhish executable
+      ansible.builtin.file:
+        path: /opt/gophish/gophish
+        mode: '770'
+    - name: Update GoPhish config
+      ansible.builtin.copy:
+        src: ./resources/gophish_config.json
+        dest: /opt/gophish/config.json
+        mode: '660'
+    - name: Add GoPhish run script
+      ansible.builtin.copy:
+        src: ./resources/gophish.sh
+        dest: /opt/gophish/run.sh
+        mode: '660'
+    - name: Add GoPhish service
+      ansible.builtin.copy:
+        src: ./resources/gophish.service
+        dest: /etc/systemd/system/gophish.service
+        mode: '644'
+    - name: Reload systemctl
+      command: systemctl daemon-reload
+    - name: Restart GoPhish
+      ansible.builtin.service:
+        name: gophish
+        state: restarted
+        enabled: yes
+    - name: Install Caddy
+      ansible.builtin.apt:
+        name: caddy
+        state: present
+    - name: Update Caddy config
+      ansible.builtin.template:
+        src: ./resources/Caddyfile.j2
+        dest: /etc/caddy/Caddyfile
+        user: caddy
+        group: caddy
+        mode: '660'
+    - name: Restart Caddy
+      ansible.builtin.service:
+        name: caddy
+        state: restarted
+        enabled: yes

@@ -1,0 +1,13 @@
+{{ gophish_admin_domain }} {
+  tls internal  # tls handled by cloudflare
+  reverse_proxy http://127.0.0.1:3333 {
+    header_up -X-Forwarded-Proto
+    header_up -Referer
+    header_up -Host
+  }
+}
+
+{{ gophish_web_domain }} {
+  tls internal  # tls handled by cloudflare
+  reverse_proxy http://127.0.0.1:8080
+}
