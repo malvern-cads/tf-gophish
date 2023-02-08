@@ -22,8 +22,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.region
-  profile = "cads"
+  region = var.region
 }
 
 provider "random" {}
